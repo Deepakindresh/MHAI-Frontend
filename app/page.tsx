@@ -1,13 +1,13 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { createClient } from "@supabase/supabase-js";
 import { useRouter } from "next/navigation";
-
-// Initialize Supabase client
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
-const supabase = createClient(supabaseUrl, supabaseAnonKey);
+import {
+  getCurrentUser,
+  subscribeToMessages,
+  supabase,
+} from "@/utils/supabase";
+import { sendChatMessage, fetchChatHistory } from "@/utils/api";
 
 interface Message {
   id: string;
@@ -23,81 +23,48 @@ const ChatPage = () => {
   const router = useRouter();
 
   useEffect(() => {
-    // Check authentication
-    const checkAuth = async () => {
-      const {
-        data: { session },
-      } = await supabase.auth.getSession();
-      if (!session) {
-        router.push("/login");
-        return;
-      }
-
-      // Load existing messages
-      const { data: existingMessages } = await supabase
-        .from("chat_messages")
-        .select("*")
-        .order("created_at", { ascending: true });
-
-      if (existingMessages) {
-        setMessages(existingMessages);
-      }
-
-      // Subscribe to new messages
-      const channel = supabase
-        .channel("chat_messages")
-        .on(
-          "postgres_changes",
-          {
-            event: "INSERT",
-            schema: "public",
-            table: "chat_messages",
-          },
-          (payload) => {
-            setMessages((prev) => [...prev, payload.new as Message]);
-          }
-        )
-        .subscribe();
-
-      return () => {
-        supabase.removeChannel(channel);
-      };
-    };
-
-    checkAuth();
-  }, [router]);
-
-  const sendMessage = async () => {
-    if (input.trim()) {
-      setIsTyping(true);
-      const {
-        data: { session },
-      } = await supabase.auth.getSession();
-
-      if (!session) {
-        router.push("/login");
-        return;
-      }
-
+    const initializeChat = async () => {
       try {
-        const response = await fetch("/api/fastapi", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            message: input.trim(),
-            user_id: session.user.id,
-          }),
-        });
-
-        if (!response.ok) {
-          throw new Error("Failed to send message");
+        const user = await getCurrentUser();
+        if (!user) {
+          router.push("/login");
+          return;
         }
 
+        // Load existing messages
+        const existingMessages = await fetchChatHistory();
+        if (existingMessages) {
+          setMessages(existingMessages);
+        }
+
+        // Subscribe to new messages
+        const channel = await subscribeToMessages((newMessage) => {
+          setMessages((prev) => [...prev, newMessage as Message]);
+        });
+
+        return () => {
+          supabase.removeChannel(channel);
+        };
+      } catch (error) {
+        console.error("Error initializing chat:", error);
+        router.push("/login");
+      }
+    };
+
+    initializeChat();
+  }, [router]);
+
+  const handleSendMessage = async () => {
+    if (input.trim()) {
+      setIsTyping(true);
+      try {
+        await sendChatMessage(input.trim());
         setInput("");
       } catch (error) {
-        console.error("Error:", error);
+        console.error("Error sending message:", error);
+        if ((error as Error).message === "Not authenticated") {
+          router.push("/login");
+        }
       } finally {
         setIsTyping(false);
       }
@@ -144,17 +111,17 @@ const ChatPage = () => {
       </div>
 
       <div className="p-4 bg-white border-t">
-        <div className="flex space-x-2 text-black">
+        <div className="flex space-x-2">
           <input
             type="text"
             value={input}
             onChange={(e) => setInput(e.target.value)}
-            onKeyPress={(e) => e.key === "Enter" && sendMessage()}
+            onKeyPress={(e) => e.key === "Enter" && handleSendMessage()}
             placeholder="Type your message..."
-            className="flex-1 p-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="flex-1 p-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-black"
           />
           <button
-            onClick={sendMessage}
+            onClick={handleSendMessage}
             className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500"
           >
             Send

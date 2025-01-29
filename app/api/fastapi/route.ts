@@ -1,18 +1,21 @@
-// app/api/fastapi/route.ts
 import { NextResponse } from "next/server";
+import { ChatMessage } from "@/utils/api";
 
 const API_URL = process.env.API_URL || "http://localhost:5000/chat";
 
 export async function POST(request: Request) {
   try {
-    const body = await request.json();
+    const body: ChatMessage = await request.json();
 
     const response = await fetch(API_URL, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({ text: body.message }),
+      body: JSON.stringify({
+        text: body.message,
+        user_id: body.user_id,
+      }),
     });
 
     if (!response.ok) {
