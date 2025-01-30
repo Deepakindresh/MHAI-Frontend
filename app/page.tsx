@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import {
   getCurrentUser,
@@ -21,8 +21,20 @@ const ChatPage = () => {
   const [input, setInput] = useState("");
   const [isTyping, setIsTyping] = useState(false);
   const router = useRouter();
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+  const [userId, setUserId] = useState<string | null>(null);
+
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  };
 
   useEffect(() => {
+    scrollToBottom();
+  }, [messages]);
+
+  useEffect(() => {
+    let channel: any = null;
+
     const initializeChat = async () => {
       try {
         const user = await getCurrentUser();
@@ -31,20 +43,27 @@ const ChatPage = () => {
           return;
         }
 
+        setUserId(user.id);
+
         // Load existing messages
         const existingMessages = await fetchChatHistory();
-        if (existingMessages) {
-          setMessages(existingMessages);
-        }
+        setMessages(existingMessages || []);
 
-        // Subscribe to new messages
-        const channel = await subscribeToMessages((newMessage) => {
-          setMessages((prev) => [...prev, newMessage as Message]);
+        // Set up real-time subscription
+        channel = await subscribeToMessages((newMessage: Message) => {
+          console.log("Received message:", newMessage);
+          setMessages((prevMessages) => {
+            // Check if message already exists
+            if (prevMessages.some((msg) => msg.id === newMessage.id)) {
+              return prevMessages;
+            }
+            return [...prevMessages, newMessage];
+          });
+
+          if (newMessage.is_bot) {
+            setIsTyping(false);
+          }
         });
-
-        return () => {
-          supabase.removeChannel(channel);
-        };
       } catch (error) {
         console.error("Error initializing chat:", error);
         router.push("/login");
@@ -52,21 +71,35 @@ const ChatPage = () => {
     };
 
     initializeChat();
+
+    return () => {
+      if (channel) {
+        supabase.removeChannel(channel);
+      }
+    };
   }, [router]);
 
   const handleSendMessage = async () => {
-    if (input.trim()) {
-      setIsTyping(true);
-      try {
-        await sendChatMessage(input.trim());
-        setInput("");
-      } catch (error) {
-        console.error("Error sending message:", error);
-        if ((error as Error).message === "Not authenticated") {
-          router.push("/login");
-        }
-      } finally {
-        setIsTyping(false);
+    if (!input.trim() || !userId) return;
+
+    const tempMessage: Message = {
+      id: `temp-${Date.now()}`,
+      content: input.trim(),
+      is_bot: false,
+      created_at: new Date().toISOString(),
+    };
+
+    setMessages((prev) => [...prev, tempMessage]);
+    setInput("");
+    setIsTyping(true);
+
+    try {
+      await sendChatMessage(tempMessage.content);
+    } catch (error) {
+      console.error("Error sending message:", error);
+      setMessages((prev) => prev.filter((msg) => msg.id !== tempMessage.id));
+      if ((error as Error).message === "Not authenticated") {
+        router.push("/login");
       }
     }
   };
@@ -78,24 +111,28 @@ const ChatPage = () => {
       </header>
 
       <div className="flex-1 overflow-y-auto p-4 space-y-4">
-        {messages.map((message) => (
-          <div
-            key={message.id}
-            className={`flex ${
-              !message.is_bot ? "justify-end" : "justify-start"
-            }`}
-          >
+        <div className="space-y-4">
+          {messages.map((message) => (
             <div
-              className={`max-w-xs p-3 rounded-lg ${
-                !message.is_bot
-                  ? "bg-blue-500 text-white"
-                  : "bg-gray-200 text-black"
+              key={message.id}
+              className={`flex ${
+                !message.is_bot ? "justify-end" : "justify-start"
               }`}
             >
-              <p className="text-sm">{message.content}</p>
+              <div
+                className={`max-w-xs md:max-w-md lg:max-w-lg p-3 rounded-lg ${
+                  !message.is_bot
+                    ? "bg-blue-500 text-white"
+                    : "bg-gray-200 text-black"
+                }`}
+              >
+                <p className="text-sm whitespace-pre-wrap break-words">
+                  {message.content}
+                </p>
+              </div>
             </div>
-          </div>
-        ))}
+          ))}
+        </div>
 
         {isTyping && (
           <div className="flex justify-start">
@@ -108,6 +145,7 @@ const ChatPage = () => {
             </div>
           </div>
         )}
+        <div ref={messagesEndRef} />
       </div>
 
       <div className="p-4 bg-white border-t">
@@ -116,13 +154,19 @@ const ChatPage = () => {
             type="text"
             value={input}
             onChange={(e) => setInput(e.target.value)}
-            onKeyPress={(e) => e.key === "Enter" && handleSendMessage()}
+            onKeyPress={(e) =>
+              e.key === "Enter" && !isTyping && handleSendMessage()
+            }
             placeholder="Type your message..."
+            disabled={isTyping}
             className="flex-1 p-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-black"
           />
           <button
             onClick={handleSendMessage}
-            className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            disabled={isTyping}
+            className={`px-4 py-2 ${
+              isTyping ? "bg-gray-400" : "bg-blue-500 hover:bg-blue-600"
+            } text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500`}
           >
             Send
           </button>
