@@ -41,13 +41,13 @@ export async function sendChatMessage(message: string) {
     const data = await response.json();
 
     // Add message to Supabase immediately for real-time updates
-    await supabase.from("chat_messages").insert([
-      {
-        content: message,
-        user_id: session.user.id,
-        is_bot: false,
-      },
-    ]);
+    // await supabase.from("chat_messages").insert([
+    //   {
+    //     content: message,
+    //     user_id: session.user.id,
+    //     is_bot: false,
+    //   },
+    // ]);
 
     return data;
   } catch (error) {

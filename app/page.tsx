@@ -4,8 +4,8 @@ import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import {
   getCurrentUser,
-  subscribeToMessages,
-  supabase,
+  // subscribeToMessages,
+  // supabase,
 } from "@/utils/supabase";
 import { sendChatMessage, fetchChatHistory } from "@/utils/api";
 
@@ -33,7 +33,7 @@ const ChatPage = () => {
   }, [messages]);
 
   useEffect(() => {
-    let channel: any = null;
+    // let channel: any = null;
 
     const initializeChat = async () => {
       try {
@@ -50,20 +50,20 @@ const ChatPage = () => {
         setMessages(existingMessages || []);
 
         // Set up real-time subscription
-        channel = await subscribeToMessages((newMessage: Message) => {
-          console.log("Received message:", newMessage);
-          setMessages((prevMessages) => {
-            // Check if message already exists
-            if (prevMessages.some((msg) => msg.id === newMessage.id)) {
-              return prevMessages;
-            }
-            return [...prevMessages, newMessage];
-          });
+        // channel = await subscribeToMessages((newMessage: Message) => {
+        //   console.log("Received message:", newMessage);
+        //   setMessages((prevMessages) => {
+        //     // Check if message already exists
+        //     if (prevMessages.some((msg) => msg.id === newMessage.id)) {
+        //       return prevMessages;
+        //     }
+        //     return [...prevMessages, newMessage];
+        //   });
 
-          if (newMessage.is_bot) {
-            setIsTyping(false);
-          }
-        });
+        //   if (newMessage.is_bot) {
+        //     setIsTyping(false);
+        //   }
+        // });
       } catch (error) {
         console.error("Error initializing chat:", error);
         router.push("/login");
@@ -72,11 +72,11 @@ const ChatPage = () => {
 
     initializeChat();
 
-    return () => {
-      if (channel) {
-        supabase.removeChannel(channel);
-      }
-    };
+    // return () => {
+    //   if (channel) {
+    //     supabase.removeChannel(channel);
+    //   }
+    // };
   }, [router]);
 
   const handleSendMessage = async () => {
@@ -94,7 +94,16 @@ const ChatPage = () => {
     setIsTyping(true);
 
     try {
-      await sendChatMessage(tempMessage.content);
+      const bMessage = await sendChatMessage(tempMessage.content);
+      const botMessage: Message = {
+        id: `bot-${Date.now()}`,
+        content: bMessage.response,
+        is_bot: true,
+        created_at: new Date().toISOString(),
+      };
+
+      setIsTyping(false);
+      setMessages((prev) => [...prev, botMessage]);
     } catch (error) {
       console.error("Error sending message:", error);
       setMessages((prev) => prev.filter((msg) => msg.id !== tempMessage.id));
