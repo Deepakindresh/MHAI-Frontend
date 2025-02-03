@@ -129,10 +129,10 @@ const ChatPage = () => {
               }`}
             >
               <div
-                className={`max-w-xs md:max-w-md lg:max-w-lg p-3 rounded-lg ${
+                className={`max-w-xs md:max-w-md lg:max-w-lg p-3 rounded-3xl  ${
                   !message.is_bot
-                    ? "bg-blue-500 text-white"
-                    : "bg-gray-200 text-black"
+                    ? "bg-blue-500 text-white rounded-br-none"
+                    : "bg-gray-200 text-black rounded-tl-none"
                 }`}
               >
                 <p className="text-sm whitespace-pre-wrap break-words">
