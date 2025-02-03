@@ -37,7 +37,7 @@ export default function LoginPage() {
           password,
         });
         if (error) throw error;
-        router.push("/chat");
+        router.push("/");
       }
     } catch (error: any) {
       setError(error.message);
@@ -68,7 +68,7 @@ export default function LoginPage() {
             <input
               type="email"
               required
-              className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-blue-500 focus:border-blue-500"
+              className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-blue-500 focus:border-blue-500 text-black"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
             />

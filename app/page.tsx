@@ -115,8 +115,23 @@ const ChatPage = () => {
 
   return (
     <div className="flex flex-col h-screen bg-gray-50">
-      <header className="bg-blue-600 text-white text-center py-4">
-        <h1 className="text-xl font-semibold">DandelionAI Chat</h1>
+      <header className="bg-blue-600 text-white flex justify-between ite py-4">
+        <div>
+          <h1 className="text-xl font-semibold px-4">DandelionAI Chat</h1>
+        </div>
+        <div className="flex space-x-4 px-4 cursor-pointer">
+          <h3 className="text-md hover:text-lg">Home</h3>
+          <h3 className="text-md hover:text-lg">Profile</h3>
+          <h3
+            onClick={async () => {
+              await fetch("/api/logout");
+              router.push("/login");
+            }}
+            className="text-md hover:text-lg"
+          >
+            Logout
+          </h3>
+        </div>
       </header>
 
       <div className="flex-1 overflow-y-auto p-4 space-y-4">
