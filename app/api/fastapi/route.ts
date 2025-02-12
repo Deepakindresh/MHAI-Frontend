@@ -8,7 +8,7 @@ export async function POST(request: Request) {
     const body: ChatMessage = await request.json();
 
     // Log the request body for debugging
-    console.log("Request body:", body);
+    // console.log("Request body:", body);
 
     // Validate required fields
     if (!body.message || !body.user_id) {
@@ -26,6 +26,7 @@ export async function POST(request: Request) {
       body: JSON.stringify({
         text: body.message,
         user_id: body.user_id,
+        last4Messages: body.last4Messages,
       }),
     });
 

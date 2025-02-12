@@ -3,9 +3,20 @@ import { supabase } from "./supabase";
 export interface ChatMessage {
   message: string;
   user_id: string;
+  last4Messages: string;
 }
 
-export async function sendChatMessage(message: string) {
+interface Message {
+  id: string;
+  content: string;
+  is_bot: boolean;
+  created_at: string;
+}
+
+export async function sendChatMessage(
+  message: string,
+  last4Message: Message[]
+) {
   const {
     data: { session },
   } = await supabase.auth.getSession();
@@ -16,10 +27,22 @@ export async function sendChatMessage(message: string) {
 
   try {
     // Log the request for debugging
-    console.log("Sending message:", {
-      message,
-      user_id: session.user.id,
-    });
+    // console.log("Sending message:", {
+    //   message,
+    //   user_id: session.user.id,
+    // });
+
+    let last4Messages = " ";
+    if (last4Messages.length) {
+      // Append last 4 messages as a string
+      for (let i = 0; i < last4Message.length; i++) {
+        if (last4Message[i].is_bot) {
+          last4Messages += "Bot: " + last4Message[i].content + "\n";
+        } else {
+          last4Messages += "User: " + last4Message[i].content + "\n";
+        }
+      }
+    }
 
     const response = await fetch("/api/fastapi", {
       method: "POST",
@@ -29,6 +52,7 @@ export async function sendChatMessage(message: string) {
       body: JSON.stringify({
         message: message.trim(), // Ensure message is trimmed
         user_id: session.user.id,
+        last4Messages,
       }),
     });
 

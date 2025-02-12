@@ -88,13 +88,19 @@ const ChatPage = () => {
       is_bot: false,
       created_at: new Date().toISOString(),
     };
-
+    let last4Messages: Message[] = [];
+    if (messages.length > 4) {
+      last4Messages = messages.slice(-4);
+    }
     setMessages((prev) => [...prev, tempMessage]);
     setInput("");
     setIsTyping(true);
 
     try {
-      const bMessage = await sendChatMessage(tempMessage.content);
+      const bMessage = await sendChatMessage(
+        tempMessage.content,
+        last4Messages
+      );
       const botMessage: Message = {
         id: `bot-${Date.now()}`,
         content: bMessage.response,
