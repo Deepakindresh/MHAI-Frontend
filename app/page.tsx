@@ -1,5 +1,6 @@
 "use client";
 
+import { AuthWrapper } from "@/components/AuthWrapper";
 import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import {
@@ -120,89 +121,72 @@ const ChatPage = () => {
   };
 
   return (
-    <div className="flex flex-col h-screen bg-gray-50">
-      <header className="bg-blue-600 text-white flex justify-between ite py-4">
-        <div>
-          <h1 className="text-xl font-semibold px-4">DandelionAI Chat</h1>
-        </div>
-        <div className="flex space-x-4 px-4 cursor-pointer">
-          <h3 className="text-md hover:text-lg">Home</h3>
-          <h3 className="text-md hover:text-lg">Profile</h3>
-          <h3
-            onClick={async () => {
-              await fetch("/api/logout");
-              router.push("/login");
-            }}
-            className="text-md hover:text-lg"
-          >
-            Logout
-          </h3>
-        </div>
-      </header>
-
-      <div className="flex-1 overflow-y-auto p-4 space-y-4">
-        <div className="space-y-4">
-          {messages.map((message) => (
-            <div
-              key={message.id}
-              className={`flex ${
-                !message.is_bot ? "justify-end" : "justify-start"
-              }`}
-            >
+    <AuthWrapper showFooter={false}>
+      <div className="flex flex-col h-screen bg-gray-50">
+        <div className="flex-1 overflow-y-auto p-4 space-y-4">
+          <div className="space-y-4">
+            {messages.map((message) => (
               <div
-                className={`max-w-xs md:max-w-md lg:max-w-lg p-3 rounded-3xl  ${
-                  !message.is_bot
-                    ? "bg-blue-500 text-white rounded-br-none"
-                    : "bg-gray-200 text-black rounded-tl-none"
+                key={message.id}
+                className={`flex ${
+                  !message.is_bot ? "justify-end" : "justify-start"
                 }`}
               >
-                <p className="text-sm whitespace-pre-wrap break-words">
-                  {message.content}
-                </p>
+                <div
+                  className={`max-w-xs md:max-w-md lg:max-w-lg p-3 rounded-3xl  ${
+                    !message.is_bot
+                      ? "bg-blue-500 text-white rounded-br-none"
+                      : "bg-gray-200 text-black rounded-tl-none"
+                  }`}
+                >
+                  <p className="text-sm whitespace-pre-wrap break-words">
+                    {message.content}
+                  </p>
+                </div>
               </div>
-            </div>
-          ))}
-        </div>
-
-        {isTyping && (
-          <div className="flex justify-start">
-            <div className="bg-gray-200 p-3 rounded-lg">
-              <div className="flex space-x-2">
-                <div className="w-2 h-2 bg-gray-500 rounded-full animate-bounce" />
-                <div className="w-2 h-2 bg-gray-500 rounded-full animate-bounce delay-100" />
-                <div className="w-2 h-2 bg-gray-500 rounded-full animate-bounce delay-200" />
-              </div>
-            </div>
+            ))}
           </div>
-        )}
-        <div ref={messagesEndRef} />
-      </div>
 
-      <div className="p-4 bg-white border-t">
-        <div className="flex space-x-2">
-          <input
-            type="text"
-            value={input}
-            onChange={(e) => setInput(e.target.value)}
-            onKeyPress={(e) =>
-              e.key === "Enter" && !isTyping && handleSendMessage()
-            }
-            placeholder="Type your message..."
-            disabled={isTyping}
-            className="flex-1 p-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-black"
-          />
-          <button
-            onClick={handleSendMessage}
-            disabled={isTyping}
-            className={`px-4 py-2 ${
-              isTyping ? "bg-gray-400" : "bg-blue-500 hover:bg-blue-600"
-            } text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500`}
-          >
-            Send
-          </button>
+          {isTyping && (
+            <div className="flex justify-start">
+              <div className="bg-gray-200 p-3 rounded-lg">
+                <div className="flex space-x-2">
+                  <div className="w-2 h-2 bg-gray-500 rounded-full animate-bounce" />
+                  <div className="w-2 h-2 bg-gray-500 rounded-full animate-bounce delay-100" />
+                  <div className="w-2 h-2 bg-gray-500 rounded-full animate-bounce delay-200" />
+                </div>
+              </div>
+            </div>
+          )}
+          <div ref={messagesEndRef} />
+        </div>
+
+        <div className="p-4 bg-white border-t">
+          <div className="flex space-x-2">
+            <input
+              type="text"
+              value={input}
+              onChange={(e) => setInput(e.target.value)}
+              onKeyPress={(e) =>
+                e.key === "Enter" && !isTyping && handleSendMessage()
+              }
+              placeholder="Type your message..."
+              disabled={isTyping}
+              className="flex-1 p-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-black"
+            />
+            <button
+              onClick={handleSendMessage}
+              disabled={isTyping}
+              className={`px-4 py-2 ${
+                isTyping ? "bg-gray-400" : "bg-blue-500 hover:bg-blue-600"
+              } text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500`}
+            >
+              Send
+            </button>
+          </div>
         </div>
       </div>
-    </div>
+    </AuthWrapper>
   );
 };
 
