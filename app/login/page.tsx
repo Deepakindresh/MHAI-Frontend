@@ -37,7 +37,7 @@ export default function LoginPage() {
           password,
         });
         if (error) throw error;
-        router.push("/");
+        router.push("/chat");
       }
     } catch (error: any) {
       setError(error.message);
