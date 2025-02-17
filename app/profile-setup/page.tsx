@@ -614,6 +614,7 @@ export default function ProfileSetup() {
         gender: formData.gender,
         occupation: formData.occupation,
         emergency_contact: formData.emergency_contact,
+        role: "user",
       });
 
       // Save assessment responses and scores

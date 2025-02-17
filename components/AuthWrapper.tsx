@@ -11,10 +11,14 @@ export const AuthWrapper = ({
   children,
   showHeader = true,
   showFooter = true,
+  chatScreen = false,
+  notHomeScreen = true,
 }: {
   children: React.ReactNode;
   showHeader?: boolean;
   showFooter?: boolean;
+  chatScreen?: boolean;
+  notHomeScreen?: boolean;
 }) => {
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(true);
@@ -46,8 +50,10 @@ export const AuthWrapper = ({
   }
 
   return (
-    <div className="flex flex-col min-h-full">
-      {showHeader && <Header />}
+    <div className="flex flex-col min-h-full relative w-full">
+      {showHeader && (
+        <Header chatScreen={chatScreen} notHomeScreen={notHomeScreen} />
+      )}
       {children}
       {showFooter && <Footer />}
     </div>

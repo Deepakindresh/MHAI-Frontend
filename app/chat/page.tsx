@@ -123,119 +123,121 @@ const ChatPage = () => {
   };
 
   return (
-    <AuthWrapper showFooter={false}>
-      <div className="flex flex-col h-screen bg-gray-50">
-        <div className="flex-1 overflow-y-auto p-4 space-y-4">
-          <div className="space-y-4">
-            <AnimatePresence initial={false}>
-              {messages.map((message) => (
-                <motion.div
-                  key={message.id}
-                  layout
-                  initial={{ opacity: 0, y: 100 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, transition: { duration: 0.3 } }}
-                  transition={{
-                    // Optional: customize the layout transition
-                    layout: {
-                      duration: 0.5,
-                      ease: "easeOut",
-                    },
-                  }}
-                >
-                  <div
+    <AuthWrapper showFooter={false} chatScreen={true}>
+      <div className="flex flex-col h-screen bg-gray-50 pt-20 overflow-y-auto items-center">
+        <div className="lg:w-[80%] w-full flex flex-col justify-between h-screen">
+          <div className="flex-1  p-4 space-y-4">
+            <div className="space-y-4">
+              <AnimatePresence initial={false}>
+                {messages.map((message) => (
+                  <motion.div
                     key={message.id}
-                    className={`flex ${
-                      !message.is_bot ? "justify-end" : "justify-start"
-                    }`}
+                    layout
+                    initial={{ opacity: 0, y: 100 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, transition: { duration: 0.3 } }}
+                    transition={{
+                      // Optional: customize the layout transition
+                      layout: {
+                        duration: 0.5,
+                        ease: "easeOut",
+                      },
+                    }}
                   >
                     <div
-                      className={`flex flex-col  space-x-10 ${
-                        !message.is_bot ? "items-end" : "items-start"
+                      key={message.id}
+                      className={`flex ${
+                        !message.is_bot ? "justify-end" : "justify-start"
                       }`}
                     >
-                      {message.is_bot && (
-                        <Image
-                          src="/dandelion.jpg"
-                          alt="Dandelion Profile Picture"
-                          width={40}
-                          height={40}
-                          className="rounded-full"
-                        />
-                      )}
                       <div
-                        className={`max-w-xs md:max-w-md lg:max-w-lg p-3 rounded-3xl  ${
-                          !message.is_bot
-                            ? "bg-linear-to-l from-violet-500 to-fuchsia-600 text-white rounded-br-xs"
-                            : "bg-[#EDF3F7] text-black rounded-tl-xs ml-10"
+                        className={`flex flex-col  space-x-10 ${
+                          !message.is_bot ? "items-end" : "items-start"
                         }`}
                       >
-                        <p className="text-sm whitespace-pre-wrap break-words">
-                          {message.content}
-                        </p>
+                        {message.is_bot && (
+                          <Image
+                            src="/dandelion.jpg"
+                            alt="Dandelion Profile Picture"
+                            width={40}
+                            height={40}
+                            className="rounded-full"
+                          />
+                        )}
+                        <div
+                          className={`max-w-xs md:max-w-md lg:max-w-lg p-3 rounded-3xl  ${
+                            !message.is_bot
+                              ? "bg-linear-to-l from-violet-500 to-fuchsia-600 text-white rounded-br-xs"
+                              : "bg-[#EDF3F7] text-black rounded-tl-xs ml-10"
+                          }`}
+                        >
+                          <p className="text-sm whitespace-pre-wrap break-words">
+                            {message.content}
+                          </p>
+                        </div>
+                        {!message.is_bot && (
+                          <Image
+                            src="/batman.jpg"
+                            alt="User Profile Picture"
+                            width={40}
+                            height={40}
+                            className="rounded-full"
+                          />
+                        )}
                       </div>
-                      {!message.is_bot && (
-                        <Image
-                          src="/batman.jpg"
-                          alt="User Profile Picture"
-                          width={40}
-                          height={40}
-                          className="rounded-full"
-                        />
-                      )}
                     </div>
-                  </div>
-                </motion.div>
-              ))}
-            </AnimatePresence>
-          </div>
+                  </motion.div>
+                ))}
+              </AnimatePresence>
+            </div>
 
-          {isTyping && (
-            <div className="flex flex-col items-start space-x-4">
-              <Image
-                src="/dandelion.jpg"
-                alt="Dandelion Profile Picture"
-                width={40}
-                height={40}
-                className="rounded-full"
-              />
-              <div className="flex justify-start animate-pulse ml-10">
-                <div className="bg-[#EDF3F7] p-3 rounded-3xl rounded-tl-none">
-                  <div className="flex space-x-2">
-                    <div className="w-2 h-2 bg-gray-500 rounded-full animate-bounce" />
-                    <div className="w-2 h-2 bg-gray-500 rounded-full animate-bounce delay-100" />
-                    <div className="w-2 h-2 bg-gray-500 rounded-full animate-bounce delay-200" />
+            {isTyping && (
+              <div className="flex flex-col items-start space-x-4">
+                <Image
+                  src="/dandelion.jpg"
+                  alt="Dandelion Profile Picture"
+                  width={40}
+                  height={40}
+                  className="rounded-full"
+                />
+                <div className="flex justify-start animate-pulse ml-10">
+                  <div className="bg-[#EDF3F7] p-3 rounded-3xl rounded-tl-none">
+                    <div className="flex space-x-2">
+                      <div className="w-2 h-2 bg-gray-500 rounded-full animate-bounce" />
+                      <div className="w-2 h-2 bg-gray-500 rounded-full animate-bounce delay-100" />
+                      <div className="w-2 h-2 bg-gray-500 rounded-full animate-bounce delay-200" />
+                    </div>
                   </div>
                 </div>
               </div>
-            </div>
-          )}
-          <div ref={messagesEndRef} />
-        </div>
+            )}
+            <div ref={messagesEndRef} />
+          </div>
 
-        <div className="p-4 bg-gray-50 border-t-3">
-          <div className="flex space-x-2">
-            <input
-              type="text"
-              value={input}
-              onChange={(e) => setInput(e.target.value)}
-              onKeyPress={(e) =>
-                e.key === "Enter" &&
-                // !isTyping &&
-                handleSendMessage()
-              }
-              placeholder="Type your message..."
-              // disabled={isTyping}
-              className="flex-1 p-2  rounded-lg focus:outline-none  text-black"
-            />
-            <button
-              onClick={handleSendMessage}
-              // disabled={isTyping}
-              className="px-4 py-2 bg-linear-to-l from-violet-500 to-fuchsia-600 hover:bg-linear-to-l hover:from-fuchsia-600 hover:to-violet-600
+          <div className="p-4 bg-gray-50 border-t-3 sticky bottom-0">
+            <div className="flex space-x-2">
+              <input
+                type="text"
+                value={input}
+                onChange={(e) => setInput(e.target.value)}
+                onKeyPress={(e) =>
+                  e.key === "Enter" &&
+                  // !isTyping &&
+                  handleSendMessage()
+                }
+                placeholder="Type your message..."
+                // disabled={isTyping}
+                className="flex-1 p-2  rounded-lg focus:outline-none  text-black"
+              />
+              <button
+                onClick={handleSendMessage}
+                // disabled={isTyping}
+                className="px-4 py-2 bg-linear-to-l from-violet-500 to-fuchsia-600 hover:bg-linear-to-l hover:from-fuchsia-600 hover:to-violet-600
                text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 hover:scale-105 hover:cursor-pointer"
-            >
-              Send
-            </button>
+              >
+                Send
+              </button>
+            </div>
           </div>
         </div>
       </div>
