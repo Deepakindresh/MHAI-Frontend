@@ -6,6 +6,16 @@ export interface ChatMessage {
   last4Messages: string;
 }
 
+export interface ChatMessageV2 {
+  message: string;
+  user_id: string;
+}
+
+export interface ChatMessageEdit {
+  message: string;
+  message_id: string;
+}
+
 interface Message {
   id: string;
   content: string;
@@ -80,6 +90,68 @@ export async function sendChatMessage(
   }
 }
 
+export async function sendChatV2Message(message: string, userId: string) {
+  const {
+    data: { session },
+  } = await supabase.auth.getSession();
+
+  if (!session) {
+    throw new Error("Not authenticated");
+  }
+  try {
+    const response = await fetch("/api/fastapiv2", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        message: message.trim(), // Ensure message is trimmed
+        user_id: userId,
+      }),
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      console.error("Error response:", errorData);
+      throw new Error(errorData.error || "Failed to send message");
+    }
+  } catch (error) {
+    console.error("Error sending message:", error);
+    throw error;
+  }
+}
+
+export async function editChatMessage(messageId: string, newText: string) {
+  const {
+    data: { session },
+  } = await supabase.auth.getSession();
+
+  if (!session) {
+    throw new Error("Not authenticated");
+  }
+  try {
+    const response = await fetch("/api/fastapiEdit", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        message: newText, // Ensure message is trimmed
+        message_id: messageId,
+      }),
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      console.error("Error response:", errorData);
+      throw new Error(errorData.error || "Failed to send message");
+    }
+  } catch (error) {
+    console.error("Error sending message:", error);
+    throw error;
+  }
+}
+
 export async function fetchChatHistory() {
   const {
     data: { session },
@@ -94,6 +166,26 @@ export async function fetchChatHistory() {
       .from("chat_messages")
       .select("*")
       .eq("user_id", session.user.id)
+      .order("created_at", { ascending: true });
+
+    if (error) {
+      console.error("Error fetching chat history:", error);
+      throw error;
+    }
+
+    return messages || [];
+  } catch (error) {
+    console.error("Error in fetchChatHistory:", error);
+    throw error;
+  }
+}
+
+export async function fetchUserChatHistory(userId: string) {
+  try {
+    const { data: messages, error } = await supabase
+      .from("chat_messages")
+      .select("*")
+      .eq("user_id", userId)
       .order("created_at", { ascending: true });
 
     if (error) {

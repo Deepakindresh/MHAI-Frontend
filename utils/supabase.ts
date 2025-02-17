@@ -19,6 +19,20 @@ export async function getCurrentUser() {
   return session?.user;
 }
 
+export async function getUserRole(userId: string) {
+  const { data, error } = await supabase
+    .from("user_profiles")
+    .select("*")
+    .eq("id", userId)
+    .single();
+
+  if (error) {
+    console.error("Error fetching user role:", error);
+    return null;
+  }
+  return data;
+}
+
 // let messageChannel: RealtimeChannel | null = null;
 
 // export async function subscribeToMessages(callback: (message: any) => void) {

@@ -1,29 +1,42 @@
 "use client";
 
+import { AuthWrapper } from "@/components/AuthWrapper";
 import { useState, useEffect, useRef } from "react";
-import { useRouter } from "next/navigation";
-import { supabase } from "@/utils/supabase";
-import { RealtimeChannel } from "@supabase/supabase-js";
-import { Edit2, Send, Check, X } from "lucide-react";
+import { useRouter, useSearchParams } from "next/navigation";
+import {
+  getCurrentUser,
+  // subscribeToMessages,
+  // supabase,
+} from "@/utils/supabase";
+import {
+  sendChatV2Message,
+  fetchUserChatHistory,
+  editChatMessage,
+} from "@/utils/api";
+import Image from "next/image";
+import { motion, AnimatePresence } from "framer-motion";
+import EditTextModal from "@/components/EditTextModel";
 
 interface Message {
   id: string;
   content: string;
-  role: "user" | "bot" | "therapist";
-  reply_to: string | null;
+  is_bot: boolean;
   created_at: string;
-  updated_at: string;
 }
 
-export default function ChatPageV2() {
+const ChatPageV2 = () => {
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
-  const [isTherapist, setIsTherapist] = useState(false);
-  const [editingMessage, setEditingMessage] = useState<string | null>(null);
-  const [editContent, setEditContent] = useState("");
+  const [isTyping, setIsTyping] = useState(false);
   const router = useRouter();
   const messagesEndRef = useRef<HTMLDivElement>(null);
-  const channelRef = useRef<RealtimeChannel | null>(null);
+  const [userId, setUserId] = useState<string | null>(null);
+  const [patientIdState, setPatientIdState] = useState<string | null>(null);
+
+  // Popup
+  const [popupOpen, setPopupOpen] = useState(false);
+  const [popUpMessageId, setPopUpMessageId] = useState("");
+  const [popUpMessage, setPopUpMessage] = useState("");
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -33,57 +46,44 @@ export default function ChatPageV2() {
     scrollToBottom();
   }, [messages]);
 
+  const searchParams = useSearchParams();
+
   useEffect(() => {
+    // let channel: any = null;
+
     const initializeChat = async () => {
       try {
-        const {
-          data: { session },
-        } = await supabase.auth.getSession();
-        if (!session) {
+        const user = await getCurrentUser();
+        if (!user) {
           router.push("/login");
           return;
         }
 
-        // Check if user is therapist
-        const { data: profile } = await supabase
-          .from("user_profiles")
-          .select("role")
-          .eq("id", session.user.id)
-          .single();
+        setUserId(user.id);
 
-        setIsTherapist(profile?.role === "therapist");
+        const patientId = searchParams.get("userId");
+        setPatientIdState(patientId);
 
         // Load existing messages
-        const { data: existingMessages } = await supabase
-          .from("chat_messages_v2")
-          .select("*")
-          .order("created_at", { ascending: true });
-
+        const existingMessages = await fetchUserChatHistory(patientId || "");
+        console.log("Existing messages:", existingMessages);
         setMessages(existingMessages || []);
 
-        // Set up realtime subscription
-        channelRef.current = supabase
-          .channel("chat_messages_v2")
-          .on(
-            "postgres_changes",
-            {
-              event: "*",
-              schema: "public",
-              table: "chat_messages_v2",
-            },
-            (payload) => {
-              if (payload.eventType === "INSERT") {
-                setMessages((prev) => [...prev, payload.new as Message]);
-              } else if (payload.eventType === "UPDATE") {
-                setMessages((prev) =>
-                  prev.map((msg) =>
-                    msg.id === payload.new.id ? (payload.new as Message) : msg
-                  )
-                );
-              }
-            }
-          )
-          .subscribe();
+        // Set up real-time subscription
+        // channel = await subscribeToMessages((newMessage: Message) => {
+        //   console.log("Received message:", newMessage);
+        //   setMessages((prevMessages) => {
+        //     // Check if message already exists
+        //     if (prevMessages.some((msg) => msg.id === newMessage.id)) {
+        //       return prevMessages;
+        //     }
+        //     return [...prevMessages, newMessage];
+        //   });
+
+        //   if (newMessage.is_bot) {
+        //     setIsTyping(false);
+        //   }
+        // });
       } catch (error) {
         console.error("Error initializing chat:", error);
         router.push("/login");
@@ -92,165 +92,196 @@ export default function ChatPageV2() {
 
     initializeChat();
 
-    return () => {
-      if (channelRef.current) {
-        supabase.removeChannel(channelRef.current);
-      }
-    };
+    // return () => {
+    //   if (channel) {
+    //     supabase.removeChannel(channel);
+    //   }
+    // };
   }, [router]);
 
   const handleSendMessage = async () => {
-    if (!input.trim()) return;
+    if (!input.trim() || !userId) return;
 
-    const {
-      data: { session },
-    } = await supabase.auth.getSession();
-    if (!session) return;
+    const tempMessage: Message = {
+      id: `temp-${Date.now()}`,
+      content: input.trim(),
+      is_bot: true,
+      created_at: new Date().toISOString(),
+    };
+
+    setMessages((prev) => [...prev, tempMessage]);
+    setInput("");
 
     try {
-      await supabase.from("chat_messages_v2").insert({
-        content: input.trim(),
-        user_id: session.user.id,
-        role: "user",
-      });
-
-      setInput("");
+      sendChatV2Message(tempMessage.content, patientIdState || "");
     } catch (error) {
       console.error("Error sending message:", error);
+      setMessages((prev) => prev.filter((msg) => msg.id !== tempMessage.id));
+      if ((error as Error).message === "Not authenticated") {
+        router.push("/login");
+      }
     }
   };
 
-  const handleEditMessage = async (messageId: string) => {
-    if (!editContent.trim()) return;
-
+  const handleEditMessage = async (id: string, newText: string) => {
     try {
-      await supabase
-        .from("chat_messages_v2")
-        .update({
-          content: editContent,
-          role: "therapist",
+      await editChatMessage(id, newText);
+      // Update message in UI
+      setMessages((prev) =>
+        prev.map((msg) => {
+          if (msg.id === id) {
+            return { ...msg, content: newText };
+          }
+          return msg;
         })
-        .eq("id", messageId);
-
-      setEditingMessage(null);
-      setEditContent("");
+      );
     } catch (error) {
       console.error("Error updating message:", error);
     }
   };
 
-  const startEditing = (message: Message) => {
-    setEditingMessage(message.id);
-    setEditContent(message.content);
-  };
-
-  const cancelEditing = () => {
-    setEditingMessage(null);
-    setEditContent("");
-  };
-
   return (
-    <div className="flex flex-col h-screen bg-gray-50">
-      <header className="bg-blue-600 text-white py-4 px-6 flex justify-between items-center">
-        <h1 className="text-xl font-semibold">Therapy Chat</h1>
-        <div className="flex space-x-4">
-          <button
-            onClick={async () => {
-              await supabase.auth.signOut();
-              router.push("/login");
-            }}
-            className="text-sm hover:underline"
-          >
-            Logout
-          </button>
-        </div>
-      </header>
-
-      <div className="flex-1 overflow-y-auto p-4 space-y-4">
-        {messages.map((message) => (
-          <div
-            key={message.id}
-            className={`flex ${
-              message.role === "user" ? "justify-end" : "justify-start"
-            }`}
-          >
-            <div className="max-w-xs md:max-w-md lg:max-w-lg">
-              {editingMessage === message.id ? (
-                <div className="bg-white p-3 rounded-lg shadow-md">
-                  <textarea
-                    value={editContent}
-                    onChange={(e) => setEditContent(e.target.value)}
-                    className="w-full p-2 border rounded text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    rows={3}
-                  />
-                  <div className="flex justify-end space-x-2 mt-2">
-                    <button
-                      onClick={() => handleEditMessage(message.id)}
-                      className="p-1 rounded bg-green-500 text-white hover:bg-green-600"
+    <AuthWrapper showFooter={false} chatScreen={true}>
+      <div className="flex flex-col h-screen bg-gray-50 pt-20 overflow-y-auto items-center">
+        <div className="lg:w-[80%] w-full flex flex-col justify-between h-screen">
+          <div className="flex-1  p-4 space-y-4">
+            {popupOpen && popUpMessage && popUpMessageId && (
+              <EditTextModal
+                value={popUpMessage}
+                messageId={popUpMessageId}
+                isOpen={popupOpen}
+                onClose={() => setPopupOpen(false)}
+                onSubmit={handleEditMessage}
+              />
+            )}
+            <div className="space-y-4">
+              <AnimatePresence initial={false}>
+                {messages.map((message) => (
+                  <motion.div
+                    key={message.id}
+                    layout
+                    initial={{ opacity: 0, y: 100 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, transition: { duration: 0.3 } }}
+                    transition={{
+                      // Optional: customize the layout transition
+                      layout: {
+                        duration: 0.5,
+                        ease: "easeOut",
+                      },
+                    }}
+                  >
+                    <div
+                      key={message.id}
+                      className={`flex ${
+                        !message.is_bot ? "justify-end" : "justify-start"
+                      }`}
                     >
-                      <Check size={16} />
-                    </button>
-                    <button
-                      onClick={cancelEditing}
-                      className="p-1 rounded bg-red-500 text-white hover:bg-red-600"
-                    >
-                      <X size={16} />
-                    </button>
-                  </div>
-                </div>
-              ) : (
-                <div
-                  className={`p-3 rounded-lg ${
-                    message.role === "user"
-                      ? "bg-blue-500 text-white"
-                      : message.role === "therapist"
-                      ? "bg-green-500 text-white"
-                      : "bg-gray-200 text-gray-800"
-                  }`}
-                >
-                  <p className="whitespace-pre-wrap break-words">
-                    {message.content}
-                  </p>
-                  <div className="flex justify-between items-center mt-1 text-xs opacity-75">
-                    <span>
-                      {new Date(message.created_at).toLocaleTimeString()}
-                    </span>
-                    {isTherapist && message.role === "bot" && (
-                      <button
-                        onClick={() => startEditing(message)}
-                        className="p-1 hover:bg-black/10 rounded"
+                      <div
+                        className={`flex flex-col  space-x-10 ${
+                          !message.is_bot ? "items-end" : "items-start"
+                        }`}
                       >
-                        <Edit2 size={12} />
-                      </button>
-                    )}
+                        {message.is_bot && (
+                          <div className="flex space-x-2 items-end w-full">
+                            <Image
+                              src="/dandelion.jpg"
+                              alt="Dandelion Profile Picture"
+                              width={40}
+                              height={40}
+                              className="rounded-full"
+                            />
+                            <div
+                              className="text-gray-700 font-bold hover:cursor-pointer w-full text-right mr-4"
+                              onClick={() => {
+                                setPopUpMessageId(message.id);
+                                setPopUpMessage(message.content);
+                                setPopupOpen(true);
+                              }}
+                            >
+                              Edit
+                            </div>
+                          </div>
+                        )}
+                        <div
+                          className={`max-w-xs md:max-w-md lg:max-w-lg p-3 rounded-3xl  ${
+                            !message.is_bot
+                              ? "bg-linear-to-l from-violet-500 to-fuchsia-600 text-white rounded-br-xs"
+                              : "bg-[#EDF3F7] text-black rounded-tl-xs ml-10"
+                          }`}
+                        >
+                          <p className="text-sm whitespace-pre-wrap break-words">
+                            {message.content}
+                          </p>
+                        </div>
+                        {!message.is_bot && (
+                          <Image
+                            src="/batman.jpg"
+                            alt="User Profile Picture"
+                            width={40}
+                            height={40}
+                            className="rounded-full"
+                          />
+                        )}
+                      </div>
+                    </div>
+                  </motion.div>
+                ))}
+              </AnimatePresence>
+            </div>
+
+            {isTyping && (
+              <div className="flex flex-col items-start space-x-4">
+                <Image
+                  src="/dandelion.jpg"
+                  alt="Dandelion Profile Picture"
+                  width={40}
+                  height={40}
+                  className="rounded-full"
+                />
+                <div className="flex justify-start animate-pulse ml-10">
+                  <div className="bg-[#EDF3F7] p-3 rounded-3xl rounded-tl-none">
+                    <div className="flex space-x-2">
+                      <div className="w-2 h-2 bg-gray-500 rounded-full animate-bounce" />
+                      <div className="w-2 h-2 bg-gray-500 rounded-full animate-bounce delay-100" />
+                      <div className="w-2 h-2 bg-gray-500 rounded-full animate-bounce delay-200" />
+                    </div>
                   </div>
                 </div>
-              )}
+              </div>
+            )}
+            <div ref={messagesEndRef} />
+          </div>
+
+          <div className="p-4 bg-gray-50 border-t-3 sticky bottom-0">
+            <div className="flex space-x-2">
+              <input
+                type="text"
+                value={input}
+                onChange={(e) => setInput(e.target.value)}
+                onKeyPress={(e) =>
+                  e.key === "Enter" &&
+                  // !isTyping &&
+                  handleSendMessage()
+                }
+                placeholder="Type your message..."
+                // disabled={isTyping}
+                className="flex-1 p-2  rounded-lg focus:outline-none  text-black"
+              />
+              <button
+                onClick={handleSendMessage}
+                // disabled={isTyping}
+                className="px-4 py-2 bg-linear-to-l from-violet-500 to-fuchsia-600 hover:bg-linear-to-l hover:from-fuchsia-600 hover:to-violet-600
+               text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 hover:scale-105 hover:cursor-pointer"
+              >
+                Send
+              </button>
             </div>
           </div>
-        ))}
-        <div ref={messagesEndRef} />
-      </div>
-
-      <div className="p-4 bg-white border-t shadow-lg">
-        <div className="flex space-x-2 max-w-4xl mx-auto">
-          <input
-            type="text"
-            value={input}
-            onChange={(e) => setInput(e.target.value)}
-            onKeyPress={(e) => e.key === "Enter" && handleSendMessage()}
-            placeholder="Type your message..."
-            className="flex-1 p-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-800"
-          />
-          <button
-            onClick={handleSendMessage}
-            className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 flex items-center"
-          >
-            <Send size={16} className="mr-1" />
-            Send
-          </button>
         </div>
       </div>
-    </div>
+    </AuthWrapper>
   );
-}
+};
+
+export default ChatPageV2;

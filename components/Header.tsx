@@ -7,9 +7,11 @@ import Image from "next/image";
 export const Header = ({
   chatScreen = false,
   notHomeScreen = true,
+  room = false,
 }: {
   chatScreen?: boolean;
   notHomeScreen?: boolean;
+  room?: boolean;
 }) => {
   const router = useRouter();
   const pathname = usePathname();
@@ -70,6 +72,14 @@ export const Header = ({
           >
             Chat
           </h3>
+          {room && (
+            <h3
+              onClick={() => router.push("/room")}
+              className="text-lg transition delay-100 duration-300 ease-in-out hover:-translate-y-1 hover:scale-110 cursor-pointer"
+            >
+              Room
+            </h3>
+          )}
           <h3
             onClick={() => router.push("/profile-setup")}
             className="text-lg cursor-pointer transition delay-100 duration-300 ease-in-out hover:-translate-y-1 hover:scale-110"
