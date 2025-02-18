@@ -31,11 +31,12 @@ export const AuthWrapper = ({
         const user = await getCurrentUser();
         if (!user) {
           router.push("/login");
-        }
-        const tempRole = await getUserRole(user.id || "");
+        } else {
+          const tempRole = await getUserRole(user.id || "");
 
-        if (tempRole) {
-          setRole(tempRole.role);
+          if (tempRole) {
+            setRole(tempRole.role);
+          }
         }
       } catch (error) {
         console.error("Auth check failed:", error);

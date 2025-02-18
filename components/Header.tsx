@@ -25,8 +25,8 @@ export const Header = ({
     <header
       className={`${
         notHomeScreen &&
-        "bg-linear-to-l from-fuchsia-600 to-violet-600 text-white"
-      } absolute w-full top-0 flex justify-center items-center py-4 h-20`}
+        "bg-linear-to-l from-fuchsia-600 to-violet-600 text-white z-20"
+      } absolute w-full top-0 flex justify-center items-center py-4 h-20 z-20`}
     >
       <div className="flex items-center w-[80%] justify-between">
         <div>

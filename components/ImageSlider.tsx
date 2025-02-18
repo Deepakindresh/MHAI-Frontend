@@ -22,7 +22,7 @@ const images: ImageType[] = [
     alt: "Second slide",
   },
   {
-    src: "/carousel1.svg",
+    src: "/carousel3.svg",
     alt: "Third slide",
   },
 ];

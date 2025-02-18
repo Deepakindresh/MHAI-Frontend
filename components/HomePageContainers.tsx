@@ -1,3 +1,5 @@
+"use client";
+
 export const HomePageContainer = ({
   children,
   className = "",
@@ -6,7 +8,11 @@ export const HomePageContainer = ({
   className?: string;
 }) => {
   return (
-    <div className={`flex w-full justify-center ${className}`}>
+    <div
+      className={`flex w-full justify-center ${className}
+
+      `}
+    >
       <div className="lg:w-[80%] w-full flex flex-col">{children}</div>
     </div>
   );

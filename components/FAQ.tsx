@@ -3,13 +3,14 @@
 import React, { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { ChevronDown } from "lucide-react";
+import { q } from "framer-motion/client";
 
 const FAQItem = ({ question, answer, isOpen, onClick }) => {
   return (
-    <div className="border border-gray-200 rounded-lg overflow-hidden">
+    <div className="border-b border-gray-200 rounded-lg overflow-hidden w-full">
       <motion.button
         onClick={onClick}
-        className="w-full p-4 text-left bg-white hover:bg-gray-50 transition-colors flex justify-between items-center"
+        className="w-full p-4 text-left bg-white hover:bg-gray-50 transition-colors flex justify-between items-center hover:cursor-pointer"
         initial={false}
       >
         <span className="font-medium text-gray-900">{question}</span>
@@ -56,27 +57,30 @@ const FAQ = () => {
 
   const faqData = [
     {
-      question: "What services do you offer?",
+      question: "What is this chatbot, and how can it help me?",
       answer:
-        "We offer a wide range of services including web development, mobile app development, and digital marketing solutions. Our team specializes in creating custom solutions tailored to your specific needs.",
+        "Our AI-powered mental health chatbot provides 24/7 emotional support, self-help resources, and the option to connect with professional therapists. It helps users manage stress, anxiety, and depression through guided conversations and personalized recommendations.",
     },
     {
-      question: "How long does it take to complete a project?",
+      question: "Is this chatbot a replacement for therapy?",
       answer:
-        "Project timelines vary depending on the scope and complexity. Typically, small projects take 2-4 weeks, while larger projects can take 2-6 months. We'll provide a detailed timeline during our initial consultation.",
+        "No, the chatbot is designed to provide support and guidance but is not a substitute for professional therapy. If needed, we offer the option to connect with licensed therapists.",
     },
     {
-      question: "What is your pricing structure?",
+      question: "Is my data safe?",
       answer:
-        "Our pricing is project-based and depends on your specific requirements. We offer competitive rates and flexible payment plans. Contact us for a detailed quote tailored to your needs.",
+        "Yes! We use end-to-end encryption and secure storage to protect your data. Your conversations are private and not shared with anyone unless you explicitly request professional support.",
+    },
+    {
+      question: "Can I talk to a real therapist through this platform?",
+      answer:
+        "Yes! We offer a Human-in-the-Loop option where you can connect with licensed mental health professionals for deeper support.",
     },
   ];
 
   return (
-    <div className="max-w-2xl mx-auto p-4 space-y-4">
-      <h2 className="text-3xl text-black font-bold text-center mb-8">
-        Frequently Asked Questions
-      </h2>
+    <div className="max-w-2xl mx-auto p-4 space-y-4 w-full">
+      <h2 className="text-3xl text-black font-bold text-left mb-8">FAQs</h2>
 
       {faqData.map((item, index) => (
         <FAQItem
@@ -84,7 +88,7 @@ const FAQ = () => {
           question={item.question}
           answer={item.answer}
           isOpen={openIndex === index}
-          onClick={() => setOpenIndex(openIndex === index ? null : index)}
+          onClick={() => setOpenIndex(index === openIndex ? null : index)}
         />
       ))}
     </div>

@@ -76,7 +76,7 @@ const EditTextModal = ({
           <button
             type="submit"
             disabled={isSubmitting}
-            className="w-full rounded-md bg-blue-600 px-4 py-2 text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:bg-blue-400 hover:cursor-pointer"
+            className="w-full rounded-md bg-linear-to-l from-fuchsia-600 to-violet-600 px-4 py-2 text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:bg-blue-400 hover:cursor-pointer"
           >
             {isSubmitting ? "Updating..." : "Update Text"}
           </button>

@@ -5,6 +5,8 @@ import { useRouter } from "next/navigation";
 import { supabase } from "@/utils/supabase";
 import { User2, Clock, Search, MessageSquare } from "lucide-react";
 import NotFound from "@/app/not-found";
+import { AuthWrapper } from "@/components/AuthWrapper";
+import { HomePageContainer } from "@/components/HomePageContainers";
 
 interface ChatUser {
   id: string;
@@ -73,20 +75,22 @@ export default function RoomsPage() {
           ),
         ];
 
+        console.log("Unique user IDs:", uniqueUserIds);
+
         // Get user profiles for these IDs
         const { data: profiles, error: profilesError } = await supabase
           .from("user_profiles")
           .select("id, full_name, occupation")
           .in("id", uniqueUserIds);
 
+        console.log("User profiles:", profiles);
+
         if (profilesError) throw profilesError;
 
         // Process users with their last messages
         const processedUsers = profiles.map((profile) => {
           const userMessages = chatMessages?.filter(
-            (msg) =>
-              msg.user_id === profile.id ||
-              (msg.user_id === session.user.id && msg.is_bot)
+            (msg) => msg.user_id === profile.id
           );
           const lastMessage = userMessages?.[0];
 
@@ -181,85 +185,81 @@ export default function RoomsPage() {
   };
 
   return (
-    <div className="flex flex-col h-screen bg-gray-50">
-      <header className="bg-blue-600 text-white py-4 px-6 flex justify-between items-center">
-        <h1 className="text-xl font-semibold">Therapist Dashboard</h1>
-        <button
-          onClick={async () => {
-            await supabase.auth.signOut();
-            router.push("/login");
-          }}
-          className="text-sm hover:underline"
-        >
-          Logout
-        </button>
-      </header>
-
-      <div className="p-4 bg-white shadow">
-        <div className="relative">
-          <input
-            type="text"
-            placeholder="Search patients..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full pl-10 pr-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-          />
-          <Search className="absolute left-3 top-2.5 text-gray-400" size={20} />
-        </div>
-      </div>
-
-      <div className="flex-1 overflow-y-auto">
-        {filteredUsers.length === 0 ? (
-          <div className="flex flex-col items-center justify-center h-full text-gray-500">
-            <MessageSquare size={48} className="mb-2" />
-            <p>No patients found</p>
-          </div>
-        ) : (
-          filteredUsers.map((user) => (
-            <div
-              key={user.id}
-              onClick={() => router.push(`/chatv2?userId=${user.id}`)}
-              className="p-4 border-b hover:bg-gray-50 cursor-pointer transition-colors"
-            >
-              <div className="flex items-center space-x-4">
-                <div className="flex-shrink-0">
-                  <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center">
-                    <User2 className="text-blue-600" size={24} />
-                  </div>
-                </div>
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center justify-between">
-                    <p className="text-sm font-medium text-gray-900 truncate">
-                      {user.full_name}
-                    </p>
-                    {user.last_message_time && (
-                      <p className="text-xs text-gray-500 flex items-center">
-                        <Clock size={12} className="mr-1" />
-                        {formatTime(user.last_message_time)}
-                      </p>
-                    )}
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <p className="text-sm text-gray-500 truncate">
-                      {user.last_message || "No messages yet"}
-                    </p>
-                    {user.unread_count && user.unread_count > 0 && (
-                      <span className="inline-flex items-center justify-center px-2 py-1 text-xs font-bold leading-none text-white bg-blue-600 rounded-full">
-                        {user.unread_count}
-                      </span>
-                    )}
-                  </div>
-                  {user.occupation && (
-                    <p className="text-xs text-gray-400 mt-1">
-                      {user.occupation}
-                    </p>
-                  )}
-                </div>
+    <AuthWrapper>
+      <div className="w-full bg-gray-50">
+        <HomePageContainer>
+          <div className="flex flex-col h-screen bg-gray-50 mt-30">
+            <div className="p-4 bg-white shadow text-black">
+              <div className="relative">
+                <input
+                  type="text"
+                  placeholder="Search patients..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="w-full pl-10 pr-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+                <Search
+                  className="absolute left-3 top-2.5 text-gray-400"
+                  size={20}
+                />
               </div>
             </div>
-          ))
-        )}
+
+            <div className="flex-1 overflow-y-auto">
+              {filteredUsers.length === 0 ? (
+                <div className="flex flex-col items-center justify-center h-full text-gray-500">
+                  <MessageSquare size={48} className="mb-2" />
+                  <p>No patients found</p>
+                </div>
+              ) : (
+                filteredUsers.map((user) => (
+                  <div
+                    key={user.id}
+                    onClick={() => router.push(`/chatv2?userId=${user.id}`)}
+                    className="p-4 border-b hover:bg-gray-50 cursor-pointer transition-colors"
+                  >
+                    <div className="flex items-center space-x-4">
+                      <div className="flex-shrink-0">
+                        <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center">
+                          <User2 className="text-blue-600" size={24} />
+                        </div>
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center justify-between">
+                          <p className="text-sm font-medium text-gray-900 truncate">
+                            {user.full_name}
+                          </p>
+                          {user.last_message_time && (
+                            <p className="text-xs text-gray-500 flex items-center">
+                              <Clock size={12} className="mr-1" />
+                              {formatTime(user.last_message_time)}
+                            </p>
+                          )}
+                        </div>
+                        <div className="flex items-center justify-between">
+                          <p className="text-sm text-gray-500 truncate">
+                            {user.last_message || "No messages yet"}
+                          </p>
+                          {user.unread_count && user.unread_count > 0 && (
+                            <span className="inline-flex items-center justify-center px-2 py-1 text-xs font-bold leading-none text-white bg-blue-600 rounded-full">
+                              {user.unread_count}
+                            </span>
+                          )}
+                        </div>
+                        {user.occupation && (
+                          <p className="text-xs text-gray-400 mt-1">
+                            {user.occupation}
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
+        </HomePageContainer>
       </div>
-    </div>
+    </AuthWrapper>
   );
 }
