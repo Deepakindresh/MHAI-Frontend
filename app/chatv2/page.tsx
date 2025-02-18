@@ -16,12 +16,15 @@ import {
 import Image from "next/image";
 import { motion, AnimatePresence } from "framer-motion";
 import EditTextModal from "@/components/EditTextModel";
+import ThinkPopup from "@/components/ThinkPopup";
+import { BrainCircuit, SquarePen } from "lucide-react";
 
 interface Message {
   id: string;
   content: string;
   is_bot: boolean;
   created_at: string;
+  deepseekThink?: string | null;
 }
 
 const ChatPageV2 = () => {
@@ -37,6 +40,10 @@ const ChatPageV2 = () => {
   const [popupOpen, setPopupOpen] = useState(false);
   const [popUpMessageId, setPopUpMessageId] = useState("");
   const [popUpMessage, setPopUpMessage] = useState("");
+
+  // Think Popup
+  const [thinkPopupOpen, setThinkPopupOpen] = useState(false);
+  const [thinkPopupMessage, setThinkPopupMessage] = useState("");
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -154,6 +161,13 @@ const ChatPageV2 = () => {
                 onSubmit={handleEditMessage}
               />
             )}
+            {thinkPopupOpen && thinkPopupMessage && (
+              <ThinkPopup
+                isOpen={thinkPopupOpen}
+                onClose={() => setThinkPopupOpen(false)}
+                messageContent={thinkPopupMessage}
+              />
+            )}
             <div className="space-y-4">
               <AnimatePresence initial={false}>
                 {messages.map((message) => (
@@ -191,15 +205,32 @@ const ChatPageV2 = () => {
                               height={40}
                               className="rounded-full"
                             />
-                            <div
-                              className="text-gray-700 font-bold hover:cursor-pointer w-full text-right mr-4"
-                              onClick={() => {
-                                setPopUpMessageId(message.id);
-                                setPopUpMessage(message.content);
-                                setPopupOpen(true);
-                              }}
-                            >
-                              Edit
+                            <div className="text-gray-700 font-bold hover:cursor-pointer w-full text-right mr-4 flex items-center space-x-4 justify-end">
+                              {message.deepseekThink && (
+                                <div
+                                  className="flex items-center space-x-1 hover:cursor-pointer hover:scale-105 transition-transform"
+                                  onClick={() => {
+                                    setThinkPopupMessage(
+                                      message.deepseekThink || ""
+                                    );
+                                    setThinkPopupOpen(true);
+                                  }}
+                                >
+                                  <div>Think </div>
+                                  <BrainCircuit size={20} />
+                                </div>
+                              )}
+                              <div
+                                className="flex items-center space-x-1 hover:cursor-pointer hover:scale-105 transition-transform"
+                                onClick={() => {
+                                  setPopUpMessageId(message.id);
+                                  setPopUpMessage(message.content);
+                                  setPopupOpen(true);
+                                }}
+                              >
+                                <div>Edit </div>
+                                <SquarePen size={20} />
+                              </div>
                             </div>
                           </div>
                         )}
