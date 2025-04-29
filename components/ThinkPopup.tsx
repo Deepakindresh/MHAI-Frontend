@@ -28,6 +28,8 @@ const ThinkPopup = ({
           <X size={24} />
         </button>
 
+        <h2 className="mb-4 text-xl font-semibold text-black">Reasoning</h2>
+
         <div className="overflow-auto text-black h-120 w-full p-4">
           {messageContent}
         </div>
